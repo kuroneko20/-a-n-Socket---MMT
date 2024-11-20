@@ -1,4 +1,4 @@
-import socket
+﻿import socket
 
 HOST = "127.0.0.1"
 # IP = "10.131.3.60"
@@ -28,7 +28,8 @@ try:
     while (msg != "x"):
         msg = input("talk: ")
         client.sendall(msg.encode(FORMAT))
-        if (msg == "sendL"):
+        #gửi dữ liệu phức tạp
+        if (msg == "sendList"):
             #wait response
             client.recv(1024)
             sendList(client, list)

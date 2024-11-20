@@ -1,5 +1,5 @@
-﻿
-import socket
+﻿import socket
+import threading
 
 HOST = "127.0.0.1"
 # IP = "192.168.1.60"
@@ -17,6 +17,28 @@ def recvList(conn):
         
     return list
 
+def handleClient(conn: socket, addr):
+    print("conn: ", conn.getsockname())
+    
+    msg = None
+    while (msg != "x"):
+        msg = conn.recv(1024).decode(FORMAT)
+        print("client ", addr, " says ", msg)
+        
+        #gửi dữ liệu phức tạp
+        if (msg == "sendList"):
+            #response
+            conn.sendall(msg.encode(FORMAT))
+            list = recvList(conn)
+            
+            print("Receive: ")
+            print(list)
+            
+    print("client ", addr, " finished")
+    print("client ", conn.getsockname(), " close")
+    conn.close()
+        
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Kết nối theo giao thức IP/TCP
 
 s.bind((HOST,SERVER_PORT))
@@ -26,29 +48,24 @@ print("Waiting for sever: ")
 print("Server: ", HOST, SERVER_PORT)
 print("Waiting for client...")
 
-try:
-    conn, addr = s.accept()
+nClient = 0
 
-    print("Client address: ", addr)
-    print("Conn: ",conn.getsockname())
+while (nClient < 3):
+    try:
+        conn, addr = s.accept()
 
-    msg = None
-    while (msg != "x"):
-        msg = conn.recv(1024).decode(FORMAT)
-        print("client ", addr, " says ", msg)
-        
-        if (msg == "sendL"):
-            #response
-            conn.sendall(msg.encode(FORMAT))
-            list = recvList(conn)
-            
-            print("Receive: ")
-            print(list)
+        thr = threading.Thread(target = handleClient, args = (conn, addr))
+        #Nếu daemon = True và số client >= 3 thì server sẽ dừng và mặc kệ client1, client2 vẫn đang chạy,
+        #nếu daemon = False thì dù số client >= 3 thì server vẫn sẽ đợi cli1 và cl2 chạy xong rồi mới tắt
+        thr.daemon = False
+        thr.start()
     
-except:
-    print("Error!")
+    except:
+        print("Error!")
+        
+    nClient += 1
 
-
+print("End")
 input()
 
 #test
