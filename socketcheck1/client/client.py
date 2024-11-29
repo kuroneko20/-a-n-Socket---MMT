@@ -18,19 +18,19 @@ try:
     while (msg != "x"):
         msg = input("talk: ")
         client.sendall(msg.encode(FORMAT))
-        #gửi dữ liệu phức tạp
         if (msg == "send file"):
             #wait response
             response = client.recv(BUFFER_SIZE).decode(FORMAT)
             
             #upload file
             if (response == "OK, send it!"):
-                fileName = input('The file name of file you want to upload: ') #D:\000MINHTHONG\Năm 2\Vovab\vocab01.txt
+                fileName = input('The file name of file you want to upload: ') #Nhập đường dẫn của file cần upload (Vd: D:\000MINHTHONG\Năm 2\Vovab\vocab01.txt)
                 client.sendall(fileName.encode(FORMAT))
                 
                 client.recv(BUFFER_SIZE).decode(FORMAT)
             
                 try:
+                    #đọc dữ liệu cảu file cần upload và gửi lên server
                     with open(fileName, "rb") as fi:
                         data = fi.read(BUFFER_SIZE)
                         while data:

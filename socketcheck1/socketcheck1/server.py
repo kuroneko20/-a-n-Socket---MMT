@@ -1,4 +1,5 @@
-﻿import socket
+﻿from pickle import TRUE
+import socket
 import threading
 
 HOST = "127.0.0.1"
@@ -30,11 +31,12 @@ def handleClient(conn: socket, addr, nClient):
                     
                     break
                 
-            destFolderPath = input('Enter the folder path you want to upload file: ') #D:\\000MINHTHONG\\Năm 2
+            destFolderPath = input('Enter the folder path you want to upload file: ') #Nhập đường dẫn thư mục mà file sẽ upload lên đó (Vd: D:\\000MINHTHONG\\Năm 2)
             destFilePath = destFolderPath + "\\" + fileNameOut 
 
             conn.sendall(msg.encode(FORMAT))
 
+            #nhận dữ liệu file cần được upload và upload lên thư mục chỉ định
             with open(destFilePath, "wb") as fo:
                 while True:
                     data = conn.recv(BUFFER_SIZE)
@@ -48,7 +50,7 @@ def handleClient(conn: socket, addr, nClient):
     
             
     print("client ", addr, " finished")
-    print("client ", conn.getsockname(), " close")
+    print("client(", nClient, ") ", conn.getsockname(), " close")
     conn.close()
         
 
@@ -63,7 +65,7 @@ print("Waiting for client...")
 
 nClient = 0
 
-while (nClient < 3):
+while (TRUE):
     try:
         conn, addr = s.accept()
 
