@@ -17,11 +17,11 @@ def handleClient(conn: socket, addr, nClient):
         print("client ", addr, " says ", msg)
         
         #upload file
-        if(msg == "send file"):
+        if(msg.find("upload") != -1):
             #response
             conn.sendall("OK, send it!".encode(FORMAT))
             
-            fileNameInp = conn.recv(BUFFER_SIZE).decode(FORMAT);
+            fileNameInp = conn.recv(BUFFER_SIZE).decode(FORMAT); #receive file name
            
             fileNameOut = ""
             for i in range(len(fileNameInp) - 1, -1, -1):
@@ -70,8 +70,7 @@ while (TRUE):
         conn, addr = s.accept()
 
         thr = threading.Thread(target = handleClient, args = (conn, addr, nClient))
-        #Nếu daemon = True và số client >= 3 thì server sẽ dừng và mặc kệ client1, client2 vẫn đang chạy,
-        #nếu daemon = False thì dù số client >= 3 thì server vẫn sẽ đợi cli1 và cl2 chạy xong rồi mới tắt server    
+        
         thr.daemon = False
         thr.start()
     
