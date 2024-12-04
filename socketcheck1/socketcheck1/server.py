@@ -1,4 +1,5 @@
 ﻿from pickle import TRUE
+from datetime import datetime
 import socket
 import threading
 
@@ -26,8 +27,10 @@ def handleClient(conn: socket, addr, nClient):
             fileNameOut = ""
             for i in range(len(fileNameInp) - 1, -1, -1):
                 if (fileNameInp[i] == "\\"):
-                    fileName = fileNameInp[i + 1:len(fileNameInp) - 1]
-                    fileNameOut = "output_" + fileName
+                    fileName = fileNameInp[i + 1:]
+                    current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+                    str_current_datetime = str(current_datetime)
+                    fileNameOut = "output_" + str_current_datetime + "_" + fileName
                     
                     break
                 
@@ -47,7 +50,7 @@ def handleClient(conn: socket, addr, nClient):
             print() 
             print('Receiving file from client', nClient)
             print('Received successfully! New filename is:', fileNameOut)
-    
+        
             
     print("client ", addr, " finished")
     print("client(", nClient, ") ", conn.getsockname(), " close")

@@ -1,7 +1,8 @@
 ﻿import socket
 
 HOST = "127.0.0.1"
-# IP = "10.131.3.60"
+
+# IP (Thong) = "10.131.7.226"
 SERVER_PORT = 58773
 FORMAT = "utf8"
 BUFFER_SIZE = 1024
@@ -41,8 +42,11 @@ try:
                             data = fi.read(BUFFER_SIZE)
                             
                     client.sendall(b"END")
+                    
                 except:
                     print("File is error to read! Please try again")
+                    
+                msg = "x"
               
         
 except:
