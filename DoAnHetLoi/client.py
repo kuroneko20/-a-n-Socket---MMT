@@ -51,45 +51,84 @@ def upload_file():
     add_log(log_message, "red")  # Thêm thời gian vào log
     save_message(log_message)  # Lưu tin nhắn
 
+# def download_file():
+#     client.sendall("download".encode())
+#     client.recv(1)
+#     filename = input("Input your filename to download: ")
+#     client.sendall(filename.encode())
+#     data = client.recv(BUFFER_SIZE)
+#     if not data:
+#         print("No data received!")
+#         return                
+#     timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
+#         # Kiểm tra xem dữ liệu nhận được có bắt đầu với "FILE:"
+#     #if data.startswith(b'FILE:'):
+#     # Hiển thị hộp thoại lưu file
+#     filepath = filedialog.asksaveasfilename(
+#             title="Save File", 
+#             initialfile=filename,  # Tên file mặc định
+#             filetypes=[("All Files", "*.*")]
+#         )
+    
+#     if not filepath:  # Nếu người dùng không chọn file để lưu
+#         print("No file selected for saving.")
+#         return
+
+#     try:
+#         # Nhận và ghi dữ liệu file từ server vào tệp tin
+#         with open(filepath, "wb") as fo:
+#             while True:
+#                 data = client.recv(BUFFER_SIZE)
+#                 if data == b"END":
+#                     break  # Kết thúc khi nhận được tín hiệu "END"
+#                 fo.write(data)  # Ghi dữ liệu vào file
+
+#         # Lưu thông tin vào log
+#         message = f"[{timestamp}] : {filepath}"
+#         add_log(message, "midnightblue")
+#         save_message(message)  # Lưu vào file log
+#         print(f"File downloaded successfully to: {filepath}")
+#     except Exception as e:
+#         print(f"Error in downloading file: {e}")
 def download_file():
     client.sendall("download".encode())
     client.recv(1)
-    filename = input("Input your filename to download: ")
+
+    # Lấy tên file từ trường nhập
+    filename = download_entry.get().strip()
+    if not filename:
+        add_log("Please enter a filename to download.", "red")
+        return
+
     client.sendall(filename.encode())
     data = client.recv(BUFFER_SIZE)
     if not data:
-        print("No data received!")
+        add_log("No data received from server. File might not exist.", "red")
         return                
-    timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-        # Kiểm tra xem dữ liệu nhận được có bắt đầu với "FILE:"
-    #if data.startswith(b'FILE:'):
-    # Hiển thị hộp thoại lưu file
+
+    # Hộp thoại lưu file
     filepath = filedialog.asksaveasfilename(
-            title="Save File", 
-            initialfile=filename,  # Tên file mặc định
-            filetypes=[("All Files", "*.*")]
-        )
-    
-    if not filepath:  # Nếu người dùng không chọn file để lưu
-        print("No file selected for saving.")
+        title="Save File",
+        initialfile=filename,  # Tên file mặc định
+        filetypes=[("All Files", "*.*")]
+    )
+    if not filepath:
+        add_log("No file selected for saving.", "red")
         return
 
     try:
         # Nhận và ghi dữ liệu file từ server vào tệp tin
         with open(filepath, "wb") as fo:
             while True:
-                data = client.recv(BUFFER_SIZE)
                 if data == b"END":
-                    break  # Kết thúc khi nhận được tín hiệu "END"
-                fo.write(data)  # Ghi dữ liệu vào file
+                    break
+                fo.write(data)
+                data = client.recv(BUFFER_SIZE)
 
-        # Lưu thông tin vào log
-        message = f"[{timestamp}] : {filepath}"
-        add_log(message, "midnightblue")
-        save_message(message)  # Lưu vào file log
-        print(f"File downloaded successfully to: {filepath}")
+        add_log(f"File downloaded successfully to: {filepath}", "green")
     except Exception as e:
-        print(f"Error in downloading file: {e}")
+        add_log(f"Error downloading file: {e}", "red")
+
 
 def connect_to_server():
     global client
@@ -178,7 +217,14 @@ send_button.pack()
 upload_button = tk.Button(root, text="Upload File", command=upload_file)
 upload_button.pack()
 
-# Nút tải file
+# Thêm trường nhập tên file
+download_label = tk.Label(root, text="Enter filename to download:", font=("Arial", 12))
+download_label.pack()
+
+download_entry = tk.Entry(root, width=40)
+download_entry.pack()
+
+# Nút tải file
 download_button = tk.Button(root, text="Download File", command=download_file)
 download_button.pack()
 
