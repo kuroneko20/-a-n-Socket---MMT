@@ -9,7 +9,7 @@ HOST = "127.0.0.1"
 # IP = "192.168.1.60"
 SERVER_PORT = 58773
 FORMAT = "utf-8"
-BUFFER_SIZE = 1024 
+BUFFER_SIZE = 100000 
 
 # Đường dẫn file lưu trữ tin nhắn
 message_log_file = "client_message_log.txt"
@@ -25,42 +25,71 @@ def send_message(event=None):  # Thêm tham số event để tương thích vớ
         message_entry.delete(0, tk.END)
 
 def upload_file():
-    # filepath = filedialog.askopenfilename()
-    # if filepath:
-    #     filename = filepath.split("/")[-1]
-    #     timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-    #     client.send(f"FILE:{filename}".encode())
-    #     with open(filepath, 'rb') as f:
-    #         file_data = f.read(1024)
-    #         client.send(file_data)
-
+    client.sendall("upload".encode())
+    client.recv(1)
     filepath = filedialog.askopenfilename()
         
-    if os.path.exists(filepath): #Error handling: file not found
-        filename = filepath.split("/")[-1]
-        timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-        #reponse file name
-        client.send(f"FILE:{filename}".encode())
+    filename = filepath.split("/")[-1]
+    timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
+    #reponse file name
+    client.send(f"FILE:{filename}".encode())
         
-        try:
-            #read data from file to upload và send to server
-            with open(filepath, "rb") as fi:
+    try:
+        #read data from file to upload và send to server
+        with open(filepath, "rb") as fi:
+            data = fi.read(BUFFER_SIZE)
+            while data:
+                client.sendall(data)
                 data = fi.read(BUFFER_SIZE)
-                while data:
-                    client.sendall(data)
-                    data = fi.read(BUFFER_SIZE)
-                        
-            client.sendall(b"END")
-            print(f"Uploaded successfully: {filepath}")
-        except:
-            print("File is error to read! Please try again")
-                
-    else:
-        print("Error: File not found!")
-        
+                    
+        client.sendall(b"END")
+        print(f"Uploaded successfully: {filepath}")
+    except:
+        print("File is error to read! Please try again")
+                      
     log_message = f"File sent [{timestamp}]: {filepath}"
     add_log(log_message, "red")  # Thêm thời gian vào log
     save_message(log_message)  # Lưu tin nhắn
+
+def download_file():
+    client.sendall("download".encode())
+    client.recv(1)
+    filename = input("Input your filename to download: ")
+    client.sendall(filename.encode())
+    data = client.recv(BUFFER_SIZE)
+    if not data:
+        print("No data received!")
+        return                
+    timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
+        # Kiểm tra xem dữ liệu nhận được có bắt đầu với "FILE:"
+    #if data.startswith(b'FILE:'):
+    # Hiển thị hộp thoại lưu file
+    filepath = filedialog.asksaveasfilename(
+            title="Save File", 
+            initialfile=filename,  # Tên file mặc định
+            filetypes=[("All Files", "*.*")]
+        )
+    
+    if not filepath:  # Nếu người dùng không chọn file để lưu
+        print("No file selected for saving.")
+        return
+
+    try:
+        # Nhận và ghi dữ liệu file từ server vào tệp tin
+        with open(filepath, "wb") as fo:
+            while True:
+                data = client.recv(BUFFER_SIZE)
+                if data == b"END":
+                    break  # Kết thúc khi nhận được tín hiệu "END"
+                fo.write(data)  # Ghi dữ liệu vào file
+
+        # Lưu thông tin vào log
+        message = f"[{timestamp}] : {filepath}"
+        add_log(message, "midnightblue")
+        save_message(message)  # Lưu vào file log
+        print(f"File downloaded successfully to: {filepath}")
+    except Exception as e:
+        print(f"Error in downloading file: {e}")
 
 def connect_to_server():
     global client
@@ -148,6 +177,10 @@ send_button.pack()
 # Nút gửi file
 upload_button = tk.Button(root, text="Upload File", command=upload_file)
 upload_button.pack()
+
+# Nút tải file
+download_button = tk.Button(root, text="Download File", command=download_file)
+download_button.pack()
 
 # Đọc và hiển thị tin nhắn trước đó
 load_previous_messages()
