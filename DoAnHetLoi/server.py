@@ -6,10 +6,9 @@ from datetime import datetime
 import os
 
 HOST = "127.0.0.1"
-# IP = "192.168.1.60"
 SERVER_PORT = 58773
 FORMAT = "utf8"
-BUFFER_SIZE = 100000
+BUFFER_SIZE = 1024
 
 # Đường dẫn file lưu trữ tin nhắn
 message_log_file = "server_message_log.txt"
@@ -44,10 +43,18 @@ def download(conn,addr):
     while True:
         conn.sendall("Ok, you can download".encode())
         filename = conn.recv(BUFFER_SIZE).decode()
-        filepath = f"./uploadfile/{filename}"
+        filepath = f"./uploadfile/{filename}"   
         timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
         
+        if not os.path.exists(filepath):  # Kiểm tra nếu file không tồn tại
+            conn.sendall(b"FILE_NOT_FOUND")  # Gửi thông báo lỗi về client
+            print(f"File '{filename}' not found on the server.")
+            continue
+        
         try:
+            file_size = os.path.getsize(filepath)  # Lấy kích thước file
+            conn.sendall(f"{file_size}".encode())  # Gửi kích thước file cho client
+            
             with open(filepath, "rb") as fi:
                 data = fi.read(BUFFER_SIZE)
                 while data:
@@ -63,7 +70,6 @@ def download(conn,addr):
         add_log(log_message, "red")  # Thêm thời gian vào log
         save_message(log_message)  # Lưu tin nhắn    
         
-        
 def start_server():
     def handle_client(conn, addr):
         try:
@@ -75,12 +81,13 @@ def start_server():
                 mes = conn.recv(BUFFER_SIZE).decode()
                 if not mes: #Xử lí trường hợp tin nhắn rỗng hoặc k hợp lệ
                     break
+                
                 elif mes.find("upload")!=-1: #Lệnh upload file
                     upload(conn,addr,client_name)
-                    break
+                    
                 elif mes.find("download")!=-1: #Lệnh download file
                     download(conn,addr)
-                    break
+                    
                 else: #Tin nhắn được gửi từ client
                     message = f"[{timestamp}] {client_name}: {mes}"
                     add_log(message, "midnightblue")
