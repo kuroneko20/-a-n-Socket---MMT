@@ -5,7 +5,6 @@ from tkinter import scrolledtext, filedialog
 from datetime import datetime
 import os
 
-ROOT_FOLDER = "D:\\000MINHTHONG\\Năm 2\\SocketGr\\Server_files" #change root folder in here
 HOST = "127.0.0.1"
 # IP = "192.168.1.60"
 SERVER_PORT = 58773
@@ -22,11 +21,12 @@ def upload(conn,addr,client_name):
         if not data:
             break
                 
+        timestamp_fn = datetime.now().strftime("%H%M%S")  # Lấy thời gian hiện tại thêm vào tên file để đảm bảo tính duy nhất
         timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
         if data.startswith(b'FILE:'):
             filename = data[5:].decode()
-            filepath = f"./uploadfile/{filename}"  # Lưu file tạm tại thư mục hiện tại
-            #Receive file data that needs to be uploaded and upload to the specified folder
+            filepath = f"./uploadfile/{client_name}_{timestamp_fn}_{filename}"  # Lưu file tạm tại thư mục hiện tại với tên file phân biệt
+           
             with open(filepath, "wb") as fo:
                 while True:
                     data = conn.recv(BUFFER_SIZE)
@@ -40,15 +40,14 @@ def upload(conn,addr,client_name):
         else:
             print("Invalid data received from client")
 
-def download(conn,addr,client_name):
+def download(conn,addr):
     while True:
         conn.sendall("Ok, you can download".encode())
         filename = conn.recv(BUFFER_SIZE).decode()
         filepath = f"./uploadfile/{filename}"
         timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-        #reponse file name
+        
         try:
-            #read data from file to upload và send to server
             with open(filepath, "rb") as fi:
                 data = fi.read(BUFFER_SIZE)
                 while data:
@@ -70,11 +69,23 @@ def start_server():
         try:
             client_name = conn.recv(BUFFER_SIZE).decode()  # Nhận tên client đầu tiên sau khi kết nối
             add_log(f"Client '{client_name}' connected from {addr}", "green")
-            mes = conn.recv(BUFFER_SIZE).decode()
-            if mes.find("upload")!=-1:
-                upload(conn,addr,client_name)
-            if mes.find("download")!=-1:
-                download(conn,addr,client_name)
+            
+            timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
+            while True:
+                mes = conn.recv(BUFFER_SIZE).decode()
+                if not mes: #Xử lí trường hợp tin nhắn rỗng hoặc k hợp lệ
+                    break
+                elif mes.find("upload")!=-1: #Lệnh upload file
+                    upload(conn,addr,client_name)
+                    break
+                elif mes.find("download")!=-1: #Lệnh download file
+                    download(conn,addr)
+                    break
+                else: #Tin nhắn được gửi từ client
+                    message = f"[{timestamp}] {client_name}: {mes}"
+                    add_log(message, "midnightblue")
+                    save_message(message)  # Lưu vào file log
+
         except Exception as e:
             add_log(f"Error with client {addr}: {e}", "red")
         finally:
@@ -92,20 +103,6 @@ def start_server():
 
 def start_server_thread():
     threading.Thread(target=start_server, daemon=True).start()
-
-def download_file():
-    if not files_received:
-        add_log("No files available to download.", "blue")
-        return
-
-    filepath = filedialog.asksaveasfilename(title="Save File", initialfile=files_received[-1].split("/")[-1])
-    if filepath:
-        try:
-            with open(files_received[-1], 'rb') as src, open(filepath, 'wb') as dest:
-                dest.write(src.read())
-            add_log(f"File saved to: {filepath}", "red")
-        except Exception as e:
-            add_log(f"Error saving file: {e}", "red")
 
 def add_log(message, color):
     log_area.insert(tk.END, f"{message}\n", color)
@@ -156,11 +153,6 @@ files_received = []
 # Nút khởi động server
 start_button = tk.Button(root, text="Start Server", command=start_server_thread)
 start_button.pack()
-
-# Nút tải xuống file gần nhất
-download_button = tk.Button(root, text="Download Last File", command=download_file)
-download_button.pack()
-
 
 # Đọc và hiển thị tin nhắn trước đó
 load_previous_messages()

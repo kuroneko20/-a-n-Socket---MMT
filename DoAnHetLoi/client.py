@@ -1,14 +1,15 @@
 import socket
+import threading
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog, scrolledtext
 from datetime import datetime
 import os
 
-ROOT_FOLDER = "D:\\000MINHTHONG\\Năm 2\\SocketGr\\Server_files" #change root folder in here
 HOST = "127.0.0.1"
 # IP = "192.168.1.60"
 SERVER_PORT = 58773
-FORMAT = "utf-8"
+FORMAT = "utf8"
 BUFFER_SIZE = 100000 
 
 # Đường dẫn file lưu trữ tin nhắn
@@ -29,67 +30,50 @@ def upload_file():
     client.recv(1)
     filepath = filedialog.askopenfilename()
         
+    if not filepath: #Thông báo lỗi nếu không chọn file để upload
+        add_log("No file selected for upload.", "red")
+        return
+    
     filename = filepath.split("/")[-1]
     timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
     #reponse file name
     client.send(f"FILE:{filename}".encode())
         
     try:
+        # Lấy kích thước file để tính toán tiến độ
+        file_size = os.path.getsize(filepath)
+        bytes_sent = 0  # Số byte đã gửi
+        progress["value"] = 0  # Reset thanh tiến trình
+        progress["maximum"] = 100  # Tối đa 100%
         #read data from file to upload và send to server
         with open(filepath, "rb") as fi:
             data = fi.read(BUFFER_SIZE)
             while data:
                 client.sendall(data)
+                
+                bytes_sent += len(data)
+                progress_percentage = (bytes_sent / file_size) * 100  # Tính phần trăm
+                progress["value"] = progress_percentage  # Cập nhật ProgressBar
+
+                # Cập nhật label phần trăm
+                percent_label.config(text=f"{int(progress_percentage)}%")
+
+                root.update_idletasks()  # Làm mới giao diện
+                    
                 data = fi.read(BUFFER_SIZE)
                     
         client.sendall(b"END")
         print(f"Uploaded successfully: {filepath}")
     except:
         print("File is error to read! Please try again")
-                      
-    log_message = f"File sent [{timestamp}]: {filepath}"
-    add_log(log_message, "red")  # Thêm thời gian vào log
-    save_message(log_message)  # Lưu tin nhắn
+        
+    finally:
+        log_message = f"File sent [{timestamp}]: {filepath}"
+        add_log(log_message, "red")  # Thêm thời gian vào log
+        save_message(log_message)  # Lưu tin nhắn        
+        client.close()  # Đóng kết nối
+        root.destroy()  # Thoát giao diện        
 
-# def download_file():
-#     client.sendall("download".encode())
-#     client.recv(1)
-#     filename = input("Input your filename to download: ")
-#     client.sendall(filename.encode())
-#     data = client.recv(BUFFER_SIZE)
-#     if not data:
-#         print("No data received!")
-#         return                
-#     timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-#         # Kiểm tra xem dữ liệu nhận được có bắt đầu với "FILE:"
-#     #if data.startswith(b'FILE:'):
-#     # Hiển thị hộp thoại lưu file
-#     filepath = filedialog.asksaveasfilename(
-#             title="Save File", 
-#             initialfile=filename,  # Tên file mặc định
-#             filetypes=[("All Files", "*.*")]
-#         )
-    
-#     if not filepath:  # Nếu người dùng không chọn file để lưu
-#         print("No file selected for saving.")
-#         return
-
-#     try:
-#         # Nhận và ghi dữ liệu file từ server vào tệp tin
-#         with open(filepath, "wb") as fo:
-#             while True:
-#                 data = client.recv(BUFFER_SIZE)
-#                 if data == b"END":
-#                     break  # Kết thúc khi nhận được tín hiệu "END"
-#                 fo.write(data)  # Ghi dữ liệu vào file
-
-#         # Lưu thông tin vào log
-#         message = f"[{timestamp}] : {filepath}"
-#         add_log(message, "midnightblue")
-#         save_message(message)  # Lưu vào file log
-#         print(f"File downloaded successfully to: {filepath}")
-#     except Exception as e:
-#         print(f"Error in downloading file: {e}")
 def download_file():
     client.sendall("download".encode())
     client.recv(1)
@@ -112,7 +96,8 @@ def download_file():
         initialfile=filename,  # Tên file mặc định
         filetypes=[("All Files", "*.*")]
     )
-    if not filepath:
+    
+    if not filepath: #Thông báo lỗi nếu không chọn nơi lưu file
         add_log("No file selected for saving.", "red")
         return
 
@@ -120,16 +105,15 @@ def download_file():
         # Nhận và ghi dữ liệu file từ server vào tệp tin
         with open(filepath, "wb") as fo:
             while True:
+                data = client.recv(BUFFER_SIZE)
                 if data == b"END":
                     break
                 fo.write(data)
-                data = client.recv(BUFFER_SIZE)
 
         add_log(f"File downloaded successfully to: {filepath}", "green")
     except Exception as e:
         add_log(f"Error downloading file: {e}", "red")
-
-
+    
 def connect_to_server():
     global client
     client_name = name_entry.get().strip()
@@ -217,6 +201,14 @@ send_button.pack()
 upload_button = tk.Button(root, text="Upload File", command=upload_file)
 upload_button.pack()
 
+# Thêm ProgressBar vào giao diện
+progress = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
+progress.pack()
+
+# Label để hiển thị phần trăm
+percent_label = tk.Label(root, text="0%", font=("Arial", 12))
+percent_label.pack()
+
 # Thêm trường nhập tên file
 download_label = tk.Label(root, text="Enter filename to download:", font=("Arial", 12))
 download_label.pack()
@@ -233,5 +225,14 @@ load_previous_messages()
 
 # Bắt đầu cập nhật đồng hồ
 update_clock()
+
+# Thêm hàm xử lý đóng cửa sổ
+def on_close():
+    """Hủy các vòng lặp và thoát ứng dụng."""
+    root.quit()  # Thoát vòng lặp chính
+    root.destroy()  # Hủy tất cả widget và đóng cửa sổ
+
+# Gắn sự kiện đóng cửa sổ
+root.protocol("WM_DELETE_WINDOW", on_close)
 
 root.mainloop()
