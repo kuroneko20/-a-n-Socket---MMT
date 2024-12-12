@@ -97,7 +97,7 @@ def download_file():
         client.sendall("download".encode())        
         try:
 
-            client.recv(1)  # Xác nhận server sẵn sàng
+            client.recv(1024)  # Xác nhận server sẵn sàng
 
             # Hiển thị thanh Progress khi bắt đầu
             progress.pack(pady=5)
@@ -105,11 +105,14 @@ def download_file():
 
             client.sendall(filename.encode())
             # Nhận phản hồi từ server: kiểm tra xem file có tồn tại không
+            expected_file_size = 0
             server_response = client.recv(BUFFER_SIZE).decode(errors='ignore')
             if server_response == "FILE_NOT_FOUND":
                 add_log(f"File '{filename}' not found on the server.", "red")
                 return  # Không tiếp tục, không mở hộp thoại lưu file  
-
+            else:
+                expected_file_size = int(server_response)
+                
             # Hộp thoại lưu file
             filepath = filedialog.asksaveasfilename(
                 title="Save File",
@@ -126,22 +129,27 @@ def download_file():
             # Nhận và ghi dữ liệu file từ server vào tệp tin
             total_received = 0
             with open(filepath, "wb") as fo:
-                client.settimeout(10.0)  # Đặt timeout cho kết nối (10 giây)
+                client.settimeout(5.0)  # Đặt timeout cho kết nối (10 giây)
                 while True:
                     try:
                         data = client.recv(BUFFER_SIZE)
-                        if not data or data == b"END":  # Kiểm tra tín hiệu kết thúc
+                        if not data:  # Nếu không có dữ liệu thì thoát (kết nối đóng)
                             break
+
                         fo.write(data)
+                        if data.find(b"END") !=-1:
+                            break                        
                         total_received += len(data)
                         # Tạm thời giả lập tiến độ (cập nhật mỗi lần nhận dữ liệu)
-                        progress["value"] = (total_received / BUFFER_SIZE) * 100
+                        progress["value"] = (total_received / expected_file_size) * 100
                         percent_label.config(text=f"Receiving...")
                         root.update_idletasks()
                     except socket.timeout:
                         add_log("Connection timeout while downloading file.", "red")
                         break
-
+            message = f"[data cuoi cung]: {data.decode()}"
+            add_log(message, "midnightblue")
+            save_message(message)  # Lưu vào file log
             add_log(f"File downloaded successfully to: {filepath}", "green")
         except Exception as e:
             add_log(f"Error downloading file: {e}", "red")
