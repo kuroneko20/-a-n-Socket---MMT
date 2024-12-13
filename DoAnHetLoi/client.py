@@ -121,10 +121,9 @@ def upload_file():
 
 def download_file():
     def start_download(filename):
-        client.sendall("download".encode())        
         try:
-
-            client.recv(1024)  # Xác nhận server sẵn sàng
+            client.sendall("download".encode())
+            client.recv(BUFFER_SIZE)  # Xác nhận server sẵn sàng
 
             # Hiển thị thanh Progress khi bắt đầu
             progress.pack(pady=5)
@@ -137,7 +136,7 @@ def download_file():
             if server_response == "FILE_NOT_FOUND":
                 add_log(f"File '{filename}' not found on the server.", "red")
                 return  # Không tiếp tục, không mở hộp thoại lưu file  
-            else:
+            elif server_response.isdigit():
                 expected_file_size = int(server_response)
                 
             # Hộp thoại lưu file
