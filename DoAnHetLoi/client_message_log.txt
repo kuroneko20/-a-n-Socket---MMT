@@ -2,3 +2,10 @@ Connected to server as 'thong'
 File sent [15:09:29]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
 Error connecting to server: [WinError 10061] No connection could be made because the target machine actively refused it
 Error connecting to server: [WinError 10061] No connection could be made because the target machine actively refused it
+Connected to server as 'quang'
+Connected to server as 'kuro'
+Connected to server as 'quang'
+Connected to server as 'quang'
+Connected to server as 'kuro'
+Connected to server as '1481'
+You [15:53:01]: 141

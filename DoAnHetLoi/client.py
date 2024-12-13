@@ -22,11 +22,11 @@ def authenticate():
     """Hiển thị hộp thoại nhập mã PIN để xác thực."""
     def on_submit():
         entered_pin = pin_entry.get()
-        if entered_pin == PIN:
+        if entered_pin:
             auth_prompt.destroy()
-            connect_to_server()
+            connect_to_server(entered_pin)
         else:
-            tk.messagebox.showerror("Authentication Failed", "Incorrect PIN. Please try again.")
+            tk.messagebox.showerror("Authentication Failed", "Please enter a PIN.")
 
     auth_prompt = tk.Toplevel(root)
     auth_prompt.title("Authentication")
@@ -40,7 +40,8 @@ def authenticate():
     submit_button.pack(pady=5)
 
     pin_entry.bind("<Return>", lambda _: on_submit())
-    pin_entry.focus_set()
+    pin_entry.focus()
+
 
 def send_message(event=None):  # Thêm tham số event để tương thích với bind
     message = message_entry.get()
@@ -212,7 +213,7 @@ def download_file():
 
     show_filename_prompt()
 
-def connect_to_server():
+def connect_to_server(pin):
     global client
     client_name = name_entry.get().strip()
     if not client_name:
@@ -222,16 +223,28 @@ def connect_to_server():
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect(("127.0.0.1", 50745))
-        client.send(client_name.encode())  # Gửi tên client ngay sau khi kết nối
-        add_log(f"Connected to server as '{client_name}'", "green")
-        save_message(f"Connected to server as '{client_name}'")  # Lưu tin nhắn
         
-        # Cập nhật nút: ẩn Connect, hiện Disconnect
-        connect_button.config(text="Disconnect from Server", command=disconnect_from_server)
+        # Gửi mã PIN tới server
+        client.send(pin.encode())
+        response = client.recv(1024).decode()
+        
+        if response == "PIN_OK":
+            client.send(client_name.encode())  # Gửi tên client sau khi xác thực thành công
+            add_log(f"Connected to server as '{client_name}'", "green")
+            save_message(f"Connected to server as '{client_name}'")
+            
+            # Cập nhật nút: ẩn Connect, hiện Disconnect
+            connect_button.config(text="Disconnect from Server", command=disconnect_from_server)
+        elif response == "INVALID_CLIENT_NAME":
+            add_log("Invalid client name. Please enter a valid name.", "red")
+        else:
+            add_log("Authentication failed. Incorrect PIN.", "red")
+            client.close()
+
     except Exception as e:
         log_message = f"Error connecting to server: {e}"
         add_log(log_message, "red")
-        save_message(log_message)  # Lưu tin nhắn
+        save_message(log_message)
 
 def disconnect_from_server():
     """Đóng kết nối và thoát giao diện."""

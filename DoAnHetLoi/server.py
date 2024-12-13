@@ -70,35 +70,52 @@ def download(conn,addr):
         add_log(log_message, "red")  # Thêm thời gian vào log
         save_message(log_message)  # Lưu tin nhắn    
         
-def start_server():
-    def handle_client(conn, addr):
-        try:
-            client_name = conn.recv(BUFFER_SIZE).decode()  # Nhận tên client đầu tiên sau khi kết nối
-            add_log(f"Client '{client_name}' connected from {addr}", "green")
-            
-            timestamp = datetime.now().strftime("%H:%M:%S")  # Lấy thời gian hiện tại
-            while True:
-                mes = conn.recv(BUFFER_SIZE).decode()
-                if not mes: #Xử lí trường hợp tin nhắn rỗng hoặc k hợp lệ
-                    break
-                
-                elif mes.find("upload")!=-1: #Lệnh upload file
-                    upload(conn,addr,client_name)
-                    
-                elif mes.find("download")!=-1: #Lệnh download file
-                    download(conn,addr)
-                    
-                else: #Tin nhắn được gửi từ client
-                    message = f"[{timestamp}] {client_name}: {mes}"
-                    add_log(message, "midnightblue")
-                    save_message(message)  # Lưu vào file log
+# Mã PIN mặc định
+SERVER_PIN = "0000"
 
-        except Exception as e:
-            add_log(f"Error with client {addr}: {e}", "red")
-        finally:
+def handle_client(conn, addr):
+    try:
+        # Nhận mã PIN từ client
+        client_pin = conn.recv(1024).decode()
+        if not client_pin or client_pin != SERVER_PIN:
+            conn.send("PIN_FAILED".encode())
             conn.close()
-            add_log(f"Client '{client_name}' disconnected.", "blue")
+            add_log(f"Authentication failed for client {addr}", "red")
+            return
+        
+        conn.send("PIN_OK".encode())
+        
+        # Nhận tên client sau khi xác thực
+        client_name = conn.recv(BUFFER_SIZE).decode()
+        if not client_name:
+            conn.send("INVALID_CLIENT_NAME".encode())
+            conn.close()
+            add_log(f"Invalid client name from {addr}. Connection closed.", "red")
+            return
 
+        add_log(f"Client '{client_name}' connected from {addr}", "green")
+        
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        while True:
+            mes = conn.recv(BUFFER_SIZE).decode()
+            if not mes:
+                break
+            elif "upload" in mes:
+                upload(conn, addr, client_name)
+            elif "download" in mes:
+                download(conn, addr)
+            else:
+                message = f"[{timestamp}] {client_name}: {mes}"
+                add_log(message, "midnightblue")
+                save_message(message)
+
+    except Exception as e:
+        add_log(f"Error with client {addr}: {e}", "red")
+    finally:
+        conn.close()
+        add_log(f"Client from {addr} disconnected.", "blue")
+
+def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("127.0.0.1", 50745))
     server.listen(5)
