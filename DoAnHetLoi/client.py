@@ -140,16 +140,14 @@ def download_file():
                         if data.find(b"END") !=-1:
                             break                        
                         total_received += len(data)
+                        progress_percentage = (total_received / expected_file_size) * 100  # Tính phần trăm
                         # Tạm thời giả lập tiến độ (cập nhật mỗi lần nhận dữ liệu)
-                        progress["value"] = (total_received / expected_file_size) * 100
-                        percent_label.config(text=f"Receiving...")
+                        progress["value"] = (total_received / expected_file_size) * 100# Cập nhật ProgressBar
+                        percent_label.config(text=f"{int(progress_percentage)}%")
                         root.update_idletasks()
                     except socket.timeout:
                         add_log("Connection timeout while downloading file.", "red")
                         break
-            message = f"[data cuoi cung]: {data.decode()}"
-            add_log(message, "midnightblue")
-            save_message(message)  # Lưu vào file log
             add_log(f"File downloaded successfully to: {filepath}", "green")
         except Exception as e:
             add_log(f"Error downloading file: {e}", "red")
