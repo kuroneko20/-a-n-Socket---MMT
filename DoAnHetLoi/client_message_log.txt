@@ -9,3 +9,6 @@ Connected to server as 'quang'
 Connected to server as 'kuro'
 Connected to server as '1481'
 You [15:53:01]: 141
+Connected to server as 'quang'
+You [16:28:32]: hello
+File sent [16:28:40]: D:/picture/picture/anime/86404256-p0.jpg

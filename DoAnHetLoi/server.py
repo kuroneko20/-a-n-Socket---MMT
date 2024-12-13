@@ -10,6 +10,11 @@ SERVER_PORT = 58773
 FORMAT = "utf8"
 BUFFER_SIZE = 1024
 
+server = None
+server_thread = None
+is_server_running = False  # Trạng thái server
+stop_event = threading.Event()  # Sự kiện để dừng server
+
 # Đường dẫn file lưu trữ tin nhắn
 message_log_file = "server_message_log.txt"
 
@@ -73,19 +78,19 @@ def download(conn,addr):
 # Mã PIN mặc định
 SERVER_PIN = "0000"
 
+client_connections = [] 
 def handle_client(conn, addr):
     try:
-        # Nhận mã PIN từ client
+        client_connections.append(conn)  # Lưu kết nối
         client_pin = conn.recv(1024).decode()
         if not client_pin or client_pin != SERVER_PIN:
             conn.send("PIN_FAILED".encode())
             conn.close()
             add_log(f"Authentication failed for client {addr}", "red")
             return
-        
+
         conn.send("PIN_OK".encode())
-        
-        # Nhận tên client sau khi xác thực
+
         client_name = conn.recv(BUFFER_SIZE).decode()
         if not client_name:
             conn.send("INVALID_CLIENT_NAME".encode())
@@ -94,9 +99,8 @@ def handle_client(conn, addr):
             return
 
         add_log(f"Client '{client_name}' connected from {addr}", "green")
-        
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        while True:
+
+        while not stop_event.is_set():
             mes = conn.recv(BUFFER_SIZE).decode()
             if not mes:
                 break
@@ -105,26 +109,79 @@ def handle_client(conn, addr):
             elif "download" in mes:
                 download(conn, addr)
             else:
-                message = f"[{timestamp}] {client_name}: {mes}"
+                message = f"{client_name}: {mes}"
                 add_log(message, "midnightblue")
                 save_message(message)
-
     except Exception as e:
         add_log(f"Error with client {addr}: {e}", "red")
     finally:
         conn.close()
         add_log(f"Client from {addr} disconnected.", "blue")
 
+def stop_all_clients():
+    """Đóng tất cả các kết nối từ client."""
+    for conn in client_connections:
+        try:
+            conn.close()
+        except:
+            pass
+    client_connections.clear()
+
 def start_server():
+    global server, is_server_running
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(("127.0.0.1", 50745))
     server.listen(5)
     add_log("Server started and listening on port 50745", "blue")
 
-    while True:
-        conn, addr = server.accept()
-        threading.Thread(target=handle_client, args=(conn, addr)).start()
+    is_server_running = True
 
+    while not stop_event.is_set():
+        try:
+            server.settimeout(1.0)  # Timeout để kiểm tra stop_event
+            conn, addr = server.accept()
+            if stop_event.is_set():
+                conn.close()
+                break
+            threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+        except socket.timeout:
+            continue
+        except OSError:
+            break  # Server đã đóng socket
+
+    # Đảm bảo dừng server (không ghi log ở đây nữa)
+    stop_all_clients()
+    if server:
+        server.close()
+    server = None
+    is_server_running = False
+
+def toggle_server():
+    global server_thread, is_server_running, server
+
+    if not is_server_running:
+        # Khởi động server
+        stop_event.clear()
+        server_thread = threading.Thread(target=start_server, daemon=True)
+        server_thread.start()
+        is_server_running = True
+        add_log("Starting server...", "green")
+        start_button.config(text="Close Server")
+    else:
+        # Dừng server
+        stop_event.set()
+        stop_all_clients()  # Đóng tất cả các kết nối client
+        if server:
+            server.close()  # Đảm bảo đóng socket server
+            server = None
+        if server_thread and server_thread.is_alive():
+            server_thread.join(timeout=2)  # Chờ luồng server dừng
+        is_server_running = False
+        add_log("Server stopped.", "red")
+        start_button.config(text="Start Server")
+    
 def start_server_thread():
     threading.Thread(target=start_server, daemon=True).start()
 
@@ -153,7 +210,8 @@ def update_clock():
 
 # Tkinter GUI
 root = tk.Tk()
-root.title("Server")
+root.title("Server Application")
+root.after(100, lambda: toggle_server())
 
 # Tiêu đề ứng dụng
 title = tk.Label(root, text="Server Application", fg="firebrick", font=("Arial", 16, "bold"))
@@ -171,11 +229,8 @@ log_area.tag_configure("green", foreground="green")
 log_area.tag_configure("midnightblue", foreground="midnightblue")
 log_area.pack()
 
-# Danh sách lưu đường dẫn các file đã nhận
-files_received = []
-
-# Nút khởi động server
-start_button = tk.Button(root, text="Start Server", command=start_server_thread)
+# Nút khởi động/dừng server
+start_button = tk.Button(root, text="Start Server", command=toggle_server)
 start_button.pack()
 
 # Đọc và hiển thị tin nhắn trước đó
