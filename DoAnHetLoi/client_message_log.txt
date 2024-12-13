@@ -371,3 +371,42 @@ Connected to server as 'fgdfg'
 You [10:15:17]: dfg
 Connected to server as 'dasds'
 You [10:16:50]: rewr
+Connected to server as 'thong'
+You [10:49:20]: helo
+File sent [10:49:28]: D:/000MINHTHONG/Năm 2/Slide Toán học tổ hợp (LT và BT)-20231012T083447Z-001/Slide Toán học tổ hợp (LT và BT)/_BT_0Mot so lenh co ban trong Maple.pdf
+File sent [10:49:39]: D:/000MINHTHONG/Năm 2/Slide Toán học tổ hợp (LT và BT)-20231012T083447Z-001/Slide Toán học tổ hợp (LT và BT)/_BT_Chuong 1. Dai cuong ve do thi.pdf
+You [10:50:22]: dá
+Connected to server as 'khoa'
+You [10:50:53]: lô
+Connected to server as 'quang'
+File sent [10:51:32]: D:/000MINHTHONG/Năm 2/Slide Toán học tổ hợp (LT và BT)-20231012T083447Z-001/Slide Toán học tổ hợp (LT và BT)/_BT_Chuong 3. Cac bai toan ve duong di.pdf
+File sent [10:51:39]: D:/000MINHTHONG/Năm 2/Slide Toán học tổ hợp (LT và BT)-20231012T083447Z-001/Slide Toán học tổ hợp (LT và BT)/_BT_Chuong 4. To hop co ban.pdf
+Connected to server as 'thong'
+Error connecting to server: [WinError 10061] No connection could be made because the target machine actively refused it
+Connected to server as 'thangbingu'
+Connected to server as 'quangthangbingu'
+You [11:01:24]: 123
+Connected to server as 'đa'
+File sent [11:01:34]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
+File sent [11:01:58]: D:/000MINHTHONG/Năm 2/quang_105132__BT_Chuong 3. Cac bai toan ve duong di.pdf
+Connected to server as 'ads'
+Connected to server as 'thong'
+Connected to server as 'quang'
+Connected to server as 'thai'
+File sent [11:10:35]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
+Connected to server as 'thong'
+File sent [11:11:39]: D:/000MINHTHONG/Năm 2/quang_105132__BT_Chuong 3. Cac bai toan ve duong di.pdf
+File sent [11:12:50]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
+File sent [11:15:19]: D:/000MINHTHONG/Năm 2/quang_105132__BT_Chuong 3. Cac bai toan ve duong di.pdf
+Connected to server as 'đs'
+You [11:15:43]: đá
+File sent [11:15:48]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
+File sent [11:15:52]: D:/000MINHTHONG/Năm 2/dss_163910_Slide XSTK - Cô Nguyễn Thị Mộng Ngọc.pdf
+Connected to server as '0000'
+Connected to server as 'đá'
+You [11:19:09]: dsa
+Connected to server as 'đá'
+You [11:19:51]: đá
+Connected to server as 'thong'
+Connected to server as 'quang'
+You [11:22:00]: đá

@@ -15,6 +15,33 @@ BUFFER_SIZE = 1024
 # Đường dẫn file lưu trữ tin nhắn
 message_log_file = "client_message_log.txt"
 
+# Mã PIN mặc định để xác thực (có thể thay bằng cơ chế bảo mật hơn)
+PIN = "0000"
+
+def authenticate():
+    """Hiển thị hộp thoại nhập mã PIN để xác thực."""
+    def on_submit():
+        entered_pin = pin_entry.get()
+        if entered_pin == PIN:
+            auth_prompt.destroy()
+            connect_to_server()
+        else:
+            tk.messagebox.showerror("Authentication Failed", "Incorrect PIN. Please try again.")
+
+    auth_prompt = tk.Toplevel(root)
+    auth_prompt.title("Authentication")
+
+    tk.Label(auth_prompt, text="Enter PIN to Connect:").pack(pady=5)
+
+    pin_entry = tk.Entry(auth_prompt, show="*", width=20)
+    pin_entry.pack(pady=5)
+
+    submit_button = tk.Button(auth_prompt, text="Submit", command=on_submit)
+    submit_button.pack(pady=5)
+
+    pin_entry.bind("<Return>", lambda _: on_submit())
+    pin_entry.focus_set()
+
 def send_message(event=None):  # Thêm tham số event để tương thích với bind
     message = message_entry.get()
     if message.strip():  # Chỉ gửi nếu tin nhắn không rỗng
@@ -129,7 +156,7 @@ def download_file():
             # Nhận và ghi dữ liệu file từ server vào tệp tin
             total_received = 0
             with open(filepath, "wb") as fo:
-                client.settimeout(5.0)  # Đặt timeout cho kết nối (10 giây)
+                client.settimeout(10.0)  # Đặt timeout cho kết nối (10 giây)
                 while True:
                     try:
                         data = client.recv(BUFFER_SIZE)
@@ -137,14 +164,15 @@ def download_file():
                             break
 
                         fo.write(data)
-                        if data.find(b"END") !=-1:
-                            break                        
                         total_received += len(data)
                         progress_percentage = (total_received / expected_file_size) * 100  # Tính phần trăm
                         # Tạm thời giả lập tiến độ (cập nhật mỗi lần nhận dữ liệu)
                         progress["value"] = (total_received / expected_file_size) * 100# Cập nhật ProgressBar
                         percent_label.config(text=f"{int(progress_percentage)}%")
-                        root.update_idletasks()
+                        root.update_idletasks()                       
+                        if data.find(b"END") !=-1:
+                            break                        
+
                     except socket.timeout:
                         add_log("Connection timeout while downloading file.", "red")
                         break
@@ -259,7 +287,7 @@ name_entry = tk.Entry(root, width=40)
 name_entry.pack()
 
 # Kết nối
-connect_button = tk.Button(root, text="Connect to Server", command=connect_to_server)
+connect_button = tk.Button(root, text="Connect to Server", command=authenticate)
 connect_button.pack()
 
 # Nút ngắt kết nối (ẩn ban đầu)
@@ -310,9 +338,9 @@ percent_label = tk.Label(left_frame, text="0%", font=("Arial", 12))
 download_button = tk.Button(right_frame, text="Download File", command=download_file)
 download_button.pack(pady=5)
 
-progress = ttk.Progressbar(left_frame, orient="horizontal", length=150, mode="determinate")
+progress = ttk.Progressbar(right_frame, orient="horizontal", length=150, mode="determinate")
 
-percent_label = tk.Label(left_frame, text="0%", font=("Arial", 12))
+percent_label = tk.Label(right_frame, text="0%", font=("Arial", 12))
 
 # Đọc và hiển thị tin nhắn trước đó
 load_previous_messages()
